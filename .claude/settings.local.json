@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite build:*)",
+      "Bash(SQLX_OFFLINE=true cargo check:*)",
+      "Bash(cargo run:*)",
+      "Bash(npx openapi-typescript:*)"
+    ]
+  }
+}

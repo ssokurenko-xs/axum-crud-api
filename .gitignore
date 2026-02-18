@@ -1,2 +1,4 @@
-/target
+server/target
 article*
+client/node_modules
+client/dist

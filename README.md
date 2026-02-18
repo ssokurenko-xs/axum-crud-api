@@ -1,6 +1,6 @@
 # 🦀 Rust Axum CRUD API
 
-A high-performance CRUD REST API built with **Rust**, **Axum**, **SQLx**, and **Postgres**, fully containerized with **Docker**.
+A high-performance CRUD REST API built with **React**, **Rust**, **Axum**, **SQLx**, and **Postgres**, fully containerized with **Docker**.
 
 # Development
 
@@ -9,5 +9,7 @@ A high-performance CRUD REST API built with **Rust**, **Axum**, **SQLx**, and **
 
 ## Links
 
+- Frontend: http://localhost:3000/
+- Backend: http://localhost:8000/
 - Swagger API: http://localhost:8000/swagger-ui/
 - Open API: http://localhost:8000/api-docs/openapi.json

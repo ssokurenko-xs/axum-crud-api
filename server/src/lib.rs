@@ -1,30 +1,30 @@
-use axum::{ extract::{ Path, State }, http::StatusCode, routing::{ get, post }, Json, Router };
-use serde::{ Deserialize, Serialize };
-use sqlx::{ postgres::PgPoolOptions, FromRow, PgPool };
+use axum::{extract::{Path, State}, http::StatusCode, routing::{get, post}, Json, Router};
+use serde::{Deserialize, Serialize};
+use sqlx::{postgres::PgPoolOptions, FromRow, PgPool};
 use std::env;
-use utoipa::{ OpenApi, ToSchema };
+use utoipa::{OpenApi, ToSchema};
 use utoipa_swagger_ui::SwaggerUi;
 
 // ── Schemas ──────────────────────────────────────────────────────────────────
 
 /// Payload for creating or updating a user.
 #[derive(Deserialize, ToSchema)]
-struct UserPayload {
+pub struct UserPayload {
     /// Full name of the user
-    name: String,
+    pub name: String,
     /// Email address of the user
-    email: String,
+    pub email: String,
 }
 
 /// A user record returned from the database.
 #[derive(Serialize, FromRow, ToSchema)]
-struct User {
+pub struct User {
     /// Auto-incremented primary key
-    id: i32,
+    pub id: i32,
     /// Full name of the user
-    name: String,
+    pub name: String,
     /// Email address of the user
-    email: String,
+    pub email: String,
 }
 
 // ── OpenAPI spec ──────────────────────────────────────────────────────────────
@@ -40,18 +40,16 @@ struct User {
     components(schemas(User, UserPayload)),
     tags((name = "users", description = "User management endpoints"))
 )]
-struct ApiDoc;
+pub struct ApiDoc;
 
 // ── Entry point ───────────────────────────────────────────────────────────────
 
-#[tokio::main]
-async fn main() {
+pub async fn run() {
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let pool = PgPoolOptions::new().connect(&db_url).await.expect("Failed to connect to DB");
     sqlx::migrate!().run(&pool).await.expect("Migrations failed");
 
     let app = Router::new()
-        // Swagger UI at /swagger-ui  |  raw JSON at /api-docs/openapi.json
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .route("/api", get(root))
         .route("/api/users", post(create_user).get(list_users))
@@ -179,8 +177,7 @@ async fn delete_user(
     State(pool): State<PgPool>,
     Path(id): Path<i32>,
 ) -> Result<StatusCode, StatusCode> {
-    let result = sqlx
-        ::query("DELETE FROM users WHERE id = $1")
+    let result = sqlx::query("DELETE FROM users WHERE id = $1")
         .bind(id)
         .execute(&pool).await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
