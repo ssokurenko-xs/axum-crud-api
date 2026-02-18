@@ -26,12 +26,12 @@ export function useUsers() {
     await refresh();
   };
 
-  const update = async (id: number, payload: UserPayload) => {
+  const update = async (id: string, payload: UserPayload) => {
     await updateUser(id, payload);
     await refresh();
   };
 
-  const remove = async (id: number) => {
+  const remove = async (id: string) => {
     await deleteUser(id);
     await refresh();
   };

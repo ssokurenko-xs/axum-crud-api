@@ -37,15 +37,14 @@ Content-Type: application/json
 ### 6. Get All Users (Should see 3 users now)
 GET {{baseUrl}}/users
 
-### 7. Get Single User (Assuming ID 1 exists)
-GET {{baseUrl}}/users/1
+### 7. Get Single User (replace UUID with one from step 3)
+GET {{baseUrl}}/users/PASTE-UUID-HERE
 
 ### 8. Get User that does not exist (Test 404)
-GET {{baseUrl}}/users/9999
+GET {{baseUrl}}/users/00000000-0000-0000-0000-000000000000
 
-### 9. Update User 2
-# Note: Ensure your backend handles PUT or PATCH for updates
-PUT {{baseUrl}}/users/2
+### 9. Update User (replace UUID with one from step 4)
+PUT {{baseUrl}}/users/PASTE-UUID-HERE
 Content-Type: application/json
 
 {
@@ -56,8 +55,8 @@ Content-Type: application/json
 ### 10. Get All Users (Verify Update)
 GET {{baseUrl}}/users
 
-### 11. Delete User 2
-DELETE {{baseUrl}}/users/3
+### 11. Delete User (replace UUID with one from step 5)
+DELETE {{baseUrl}}/users/PASTE-UUID-HERE
 
 ### 12. Get All Users (Final check - Bob should be gone)
 GET {{baseUrl}}/users

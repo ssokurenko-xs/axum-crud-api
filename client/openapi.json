@@ -82,8 +82,8 @@
             "description": "User ID",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -116,8 +116,8 @@
             "description": "User ID",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -163,8 +163,8 @@
             "description": "User ID",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -198,9 +198,9 @@
             "description": "Email address of the user"
           },
           "id": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Auto-incremented primary key"
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier"
           },
           "name": {
             "type": "string",

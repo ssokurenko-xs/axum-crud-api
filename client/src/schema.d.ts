@@ -50,10 +50,10 @@ export interface components {
             /** @description Email address of the user */
             email: string;
             /**
-             * Format: int32
-             * @description Auto-incremented primary key
+             * Format: uuid
+             * @description Unique identifier
              */
-            id: number;
+            id: string;
             /** @description Full name of the user */
             name: string;
         };
@@ -137,7 +137,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description User ID */
-                id: number;
+                id: string;
             };
             cookie?: never;
         };
@@ -167,7 +167,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description User ID */
-                id: number;
+                id: string;
             };
             cookie?: never;
         };
@@ -208,7 +208,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description User ID */
-                id: number;
+                id: string;
             };
             cookie?: never;
         };

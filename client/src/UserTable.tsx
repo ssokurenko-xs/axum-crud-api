@@ -3,7 +3,7 @@ import type { User } from './api';
 interface Props {
   users: User[];
   onEdit: (user: User) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
 }
 
 export function UserTable({ users, onEdit, onDelete }: Props) {

@@ -1,9 +1,11 @@
-use axum::{extract::{Path, State}, http::StatusCode, routing::{get, post}, Json, Router};
+use axum::{extract::{Path, State}, http::{HeaderValue, Method, StatusCode}, routing::{get, post}, Json, Router};
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, FromRow, PgPool};
 use std::env;
+use tower_http::cors::CorsLayer;
 use utoipa::{OpenApi, ToSchema};
 use utoipa_swagger_ui::SwaggerUi;
+use uuid::Uuid;
 
 // ── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -19,8 +21,8 @@ pub struct UserPayload {
 /// A user record returned from the database.
 #[derive(Serialize, FromRow, ToSchema)]
 pub struct User {
-    /// Auto-incremented primary key
-    pub id: i32,
+    /// Unique identifier
+    pub id: Uuid,
     /// Full name of the user
     pub name: String,
     /// Email address of the user
@@ -49,11 +51,19 @@ pub async fn run() {
     let pool = PgPoolOptions::new().connect(&db_url).await.expect("Failed to connect to DB");
     sqlx::migrate!().run(&pool).await.expect("Migrations failed");
 
+    let cors = CorsLayer::new()
+        .allow_origin([
+            "http://localhost:3000".parse::<HeaderValue>().unwrap(),
+        ])
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_headers([axum::http::header::CONTENT_TYPE]);
+
     let app = Router::new()
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .route("/api", get(root))
         .route("/api/users", post(create_user).get(list_users))
         .route("/api/users/{id}", get(get_user).put(update_user).delete(delete_user))
+        .layer(cors)
         .with_state(pool);
 
     let port = env::var("PORT").unwrap_or_else(|_| "8000".to_string());
@@ -117,7 +127,7 @@ async fn create_user(
     get,
     path = "/api/users/{id}",
     tag = "users",
-    params(("id" = i32, Path, description = "User ID")),
+    params(("id" = Uuid, Path, description = "User ID")),
     responses(
         (status = 200, description = "User found", body = User),
         (status = 404, description = "User not found"),
@@ -125,7 +135,7 @@ async fn create_user(
 )]
 async fn get_user(
     State(pool): State<PgPool>,
-    Path(id): Path<i32>,
+    Path(id): Path<Uuid>,
 ) -> Result<Json<User>, StatusCode> {
     sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
         .bind(id)
@@ -139,7 +149,7 @@ async fn get_user(
     put,
     path = "/api/users/{id}",
     tag = "users",
-    params(("id" = i32, Path, description = "User ID")),
+    params(("id" = Uuid, Path, description = "User ID")),
     request_body = UserPayload,
     responses(
         (status = 200, description = "User updated successfully", body = User),
@@ -149,7 +159,7 @@ async fn get_user(
 )]
 async fn update_user(
     State(pool): State<PgPool>,
-    Path(id): Path<i32>,
+    Path(id): Path<Uuid>,
     Json(payload): Json<UserPayload>,
 ) -> Result<Json<User>, StatusCode> {
     sqlx::query_as::<_, User>("UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING *")
@@ -166,7 +176,7 @@ async fn update_user(
     delete,
     path = "/api/users/{id}",
     tag = "users",
-    params(("id" = i32, Path, description = "User ID")),
+    params(("id" = Uuid, Path, description = "User ID")),
     responses(
         (status = 204, description = "User deleted successfully"),
         (status = 404, description = "User not found"),
@@ -175,7 +185,7 @@ async fn update_user(
 )]
 async fn delete_user(
     State(pool): State<PgPool>,
-    Path(id): Path<i32>,
+    Path(id): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
     let result = sqlx::query("DELETE FROM users WHERE id = $1")
         .bind(id)
