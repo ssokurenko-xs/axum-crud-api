@@ -1,50 +1,32 @@
-use axum::{extract::{Path, State}, http::{HeaderValue, Method, StatusCode}, routing::{get, post}, Json, Router};
-use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgPoolOptions, FromRow, PgPool};
+mod api;
+pub mod models;
+
+use axum::{http::{HeaderValue, Method}, routing::get, Router};
+use models::{User, UserPayload};
+use sqlx::postgres::PgPoolOptions;
 use std::env;
 use tower_http::cors::CorsLayer;
-use utoipa::{OpenApi, ToSchema};
+use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-use uuid::Uuid;
-
-// ── Schemas ──────────────────────────────────────────────────────────────────
-
-/// Payload for creating or updating a user.
-#[derive(Deserialize, ToSchema)]
-pub struct UserPayload {
-    /// Full name of the user
-    pub name: String,
-    /// Email address of the user
-    pub email: String,
-}
-
-/// A user record returned from the database.
-#[derive(Serialize, FromRow, ToSchema)]
-pub struct User {
-    /// Unique identifier
-    pub id: Uuid,
-    /// Full name of the user
-    pub name: String,
-    /// Email address of the user
-    pub email: String,
-}
-
-// ── OpenAPI spec ──────────────────────────────────────────────────────────────
 
 #[derive(OpenApi)]
 #[openapi(
     info(
         title = "User Management API",
         version = "1.0.0",
-        description = "A simple CRUD API for managing users built with Axum + SQLx"
+        description = "CRUD API for managing users built with Axum + SQLx"
     ),
-    paths(list_users, create_user, get_user, update_user, delete_user),
+    paths(
+        api::users::list_users,
+        api::users::create_user,
+        api::users::get_user,
+        api::users::update_user,
+        api::users::delete_user,
+    ),
     components(schemas(User, UserPayload)),
     tags((name = "users", description = "User management endpoints"))
 )]
 pub struct ApiDoc;
-
-// ── Entry point ───────────────────────────────────────────────────────────────
 
 pub async fn run() {
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
@@ -60,9 +42,8 @@ pub async fn run() {
 
     let app = Router::new()
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
-        .route("/api", get(root))
-        .route("/api/users", post(create_user).get(list_users))
-        .route("/api/users/{id}", get(get_user).put(update_user).delete(delete_user))
+        .route("/api", get(|| async { "Welcome to the User Management API!" }))
+        .merge(api::users::router())
         .layer(cors)
         .with_state(pool);
 
@@ -74,127 +55,4 @@ pub async fn run() {
     println!("📄 OpenAPI JSON → http://localhost:{}/api-docs/openapi.json", port);
 
     axum::serve(listener, app).await.unwrap();
-}
-
-// ── Handlers ──────────────────────────────────────────────────────────────────
-
-async fn root() -> &'static str {
-    "Welcome to the User Management API!"
-}
-
-/// List all users
-#[utoipa::path(
-    get,
-    path = "/api/users",
-    tag = "users",
-    responses(
-        (status = 200, description = "Successfully retrieved list of users", body = Vec<User>),
-        (status = 500, description = "Internal server error"),
-    )
-)]
-async fn list_users(State(pool): State<PgPool>) -> Result<Json<Vec<User>>, StatusCode> {
-    sqlx::query_as::<_, User>("SELECT * FROM users")
-        .fetch_all(&pool).await
-        .map(Json)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
-}
-
-/// Create a new user
-#[utoipa::path(
-    post,
-    path = "/api/users",
-    tag = "users",
-    request_body = UserPayload,
-    responses(
-        (status = 201, description = "User created successfully", body = User),
-        (status = 500, description = "Internal server error"),
-    )
-)]
-async fn create_user(
-    State(pool): State<PgPool>,
-    Json(payload): Json<UserPayload>,
-) -> Result<(StatusCode, Json<User>), StatusCode> {
-    sqlx::query_as::<_, User>("INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *")
-        .bind(payload.name)
-        .bind(payload.email)
-        .fetch_one(&pool).await
-        .map(|u| (StatusCode::CREATED, Json(u)))
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
-}
-
-/// Get a single user by ID
-#[utoipa::path(
-    get,
-    path = "/api/users/{id}",
-    tag = "users",
-    params(("id" = Uuid, Path, description = "User ID")),
-    responses(
-        (status = 200, description = "User found", body = User),
-        (status = 404, description = "User not found"),
-    )
-)]
-async fn get_user(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> Result<Json<User>, StatusCode> {
-    sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
-        .bind(id)
-        .fetch_one(&pool).await
-        .map(Json)
-        .map_err(|_| StatusCode::NOT_FOUND)
-}
-
-/// Update an existing user
-#[utoipa::path(
-    put,
-    path = "/api/users/{id}",
-    tag = "users",
-    params(("id" = Uuid, Path, description = "User ID")),
-    request_body = UserPayload,
-    responses(
-        (status = 200, description = "User updated successfully", body = User),
-        (status = 404, description = "User not found"),
-        (status = 500, description = "Internal server error"),
-    )
-)]
-async fn update_user(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-    Json(payload): Json<UserPayload>,
-) -> Result<Json<User>, StatusCode> {
-    sqlx::query_as::<_, User>("UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING *")
-        .bind(payload.name)
-        .bind(payload.email)
-        .bind(id)
-        .fetch_one(&pool).await
-        .map(Json)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
-}
-
-/// Delete a user by ID
-#[utoipa::path(
-    delete,
-    path = "/api/users/{id}",
-    tag = "users",
-    params(("id" = Uuid, Path, description = "User ID")),
-    responses(
-        (status = 204, description = "User deleted successfully"),
-        (status = 404, description = "User not found"),
-        (status = 500, description = "Internal server error"),
-    )
-)]
-async fn delete_user(
-    State(pool): State<PgPool>,
-    Path(id): Path<Uuid>,
-) -> Result<StatusCode, StatusCode> {
-    let result = sqlx::query("DELETE FROM users WHERE id = $1")
-        .bind(id)
-        .execute(&pool).await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    if result.rows_affected() == 0 {
-        Err(StatusCode::NOT_FOUND)
-    } else {
-        Ok(StatusCode::NO_CONTENT)
-    }
 }
