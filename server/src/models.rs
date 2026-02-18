@@ -3,6 +3,22 @@ use sqlx::FromRow;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+// ── Devices ──────────────────────────────────────────────────────────────────
+
+/// Payload for registering a new device.
+#[derive(Deserialize, ToSchema)]
+pub struct RegisterDevicePayload {
+    /// Device identifier
+    pub device_id: String,
+}
+
+/// Response for a pre-signed upload URL.
+#[derive(Serialize, ToSchema)]
+pub struct UploadKeyResponse {
+    /// Pre-signed upload URL
+    pub url: String,
+}
+
 /// Payload for creating or updating a user.
 #[derive(Deserialize, ToSchema)]
 pub struct UserPayload {

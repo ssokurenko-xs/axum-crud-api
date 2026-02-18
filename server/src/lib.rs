@@ -2,7 +2,7 @@ mod api;
 pub mod models;
 
 use axum::{http::{HeaderValue, Method}, routing::get, Router};
-use models::{User, UserPayload};
+use models::{RegisterDevicePayload, UploadKeyResponse, User, UserPayload};
 use sqlx::postgres::PgPoolOptions;
 use std::env;
 use tower_http::cors::CorsLayer;
@@ -22,9 +22,14 @@ use utoipa_swagger_ui::SwaggerUi;
         api::users::get_user,
         api::users::update_user,
         api::users::delete_user,
+        api::devices::register_device,
+        api::devices::upload_key,
     ),
-    components(schemas(User, UserPayload)),
-    tags((name = "users", description = "User management endpoints"))
+    components(schemas(User, UserPayload, RegisterDevicePayload, UploadKeyResponse)),
+    tags(
+        (name = "users", description = "User management endpoints"),
+        (name = "devices", description = "Device management endpoints"),
+    )
 )]
 pub struct ApiDoc;
 
@@ -44,6 +49,7 @@ pub async fn run() {
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .route("/api", get(|| async { "Welcome to the User Management API!" }))
         .merge(api::users::router())
+        .merge(api::devices::router())
         .layer(cors)
         .with_state(pool);
 
